@@ -4,11 +4,11 @@ const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const API_KEY = process.env.GEMINI_API_KEY;
 
-if (!API_KEY) {
-  console.error("Missing GEMINI_API_KEY in .env");
-  process.exit(1);
+if (!process.env.GEMINI_API_KEY) {
+  console.warn(
+    "Warning: GEMINI_API_KEY is not set. The site will load, but /api/chat will return an error until the key is available."
+  );
 }
 
 app.use(express.json({ limit: "10mb" }));
@@ -37,6 +37,13 @@ const SYSTEM_INSTRUCTION = `
 
 app.post("/api/chat", async (req, res) => {
   try {
+    const API_KEY = process.env.GEMINI_API_KEY;
+    if (!API_KEY) {
+      return res.status(503).json({
+        error: "مفتاح GEMINI_API_KEY غير متاح حاليًا. تأكد من إضافته في إعدادات المشروع."
+      });
+    }
+
     const { message, image } = req.body || {};
 
     if ((!message || !message.trim()) && !image) {
@@ -92,7 +99,7 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
-app.get("*", (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
